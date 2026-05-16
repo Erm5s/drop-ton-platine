@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  psnId     String   @unique
+  username  String
+  avatarUrl String?
+  level     Int      @default(1)
+  trophies  UserTrophy[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([username])
+}
+
+model Game {
+  id       String   @id
+  title    String
+  platform String?
+  iconUrl  String?
+  trophies Trophy[]
+
+  @@index([title])
+}
+
+model Trophy {
+  id          String       @id
+  gameId      String
+  game        Game         @relation(fields: [gameId], references: [id])
+  name        String
+  description String?
+  rarity      TrophyRarity
+  iconUrl     String?
+  users       UserTrophy[]
+
+  @@index([gameId])
+  @@index([rarity])
+}
+
+model UserTrophy {
+  userId   String
+  trophyId String
+  earnedAt DateTime
+  user     User   @relation(fields: [userId], references: [id])
+  trophy   Trophy @relation(fields: [trophyId], references: [id])
+
+  @@id([userId, trophyId])
+  @@index([userId])
+  @@index([earnedAt])
+}
+
+enum TrophyRarity {
+  bronze
+  silver
+  gold
+  platinum
+}
