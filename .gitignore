@@ -12,6 +12,7 @@ frontend/dist/
 
 # Prisma
 prisma/migrations/
+src/generated/
 
 # DB data
 pgdata/
