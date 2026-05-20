@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -60,4 +61,9 @@ enum TrophyRarity {
   silver
   gold
   platinum
+}
+
+model SystemConfig {
+  id           Int     @id
+  refreshToken String?
 }
