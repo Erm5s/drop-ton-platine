@@ -8,13 +8,14 @@ datasource db {
 }
 
 model User {
-  psnId     String   @id
+  psnId     String      @id
   username  String
   avatarUrl String?
   stats     UserStats?
   trophies  UserTrophy[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  games     UserGame[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
   @@index([username])
 }
@@ -31,35 +32,63 @@ model UserStats {
 }
 
 model Game {
-  id       String   @id
-  title    String
-  platform String?
-  iconUrl  String?
-  trophies Trophy[]
+  id              String        @id
+  title           String
+  platform        String?
+  iconUrl         String?
+  trophySetVersion String?
+  trophies        Trophy[]
+  trophyGroups    TrophyGroup[]
+  users           UserGame[]
 
   @@index([title])
 }
 
+model TrophyGroup {
+  id       String    @id  // "${gameId}-${groupId}" ex: "NPWR12345_00-default"
+  gameId   String
+  game     Game      @relation(fields: [gameId], references: [id])
+  groupId  String    // identifiant PSN brut : "default", "001", "002"...
+  name     String
+  iconUrl  String?
+  trophies Trophy[]
+
+  @@index([gameId])
+}
+
 model Trophy {
-  id          String       @id
-  gameId      String
-  game        Game         @relation(fields: [gameId], references: [id])
-  name        String
-  description String?
-  rarity      TrophyRarity
-  iconUrl     String?
-  users       UserTrophy[]
+  id            String       @id
+  gameId        String
+  game          Game         @relation(fields: [gameId], references: [id])
+  trophyGroupId String
+  trophyGroup   TrophyGroup  @relation(fields: [trophyGroupId], references: [id])
+  name          String
+  description   String?
+  rarity        TrophyRarity
+  iconUrl       String?
+  users         UserTrophy[]
 
   @@index([gameId])
   @@index([rarity])
 }
 
+model UserGame {
+  userId              String
+  gameId              String
+  lastUpdatedDateTime DateTime?
+  user                User      @relation(fields: [userId], references: [psnId])
+  game                Game      @relation(fields: [gameId], references: [id])
+
+  @@id([userId, gameId])
+  @@index([userId])
+}
+
 model UserTrophy {
   userId   String
   trophyId String
-  earnedAt DateTime
-  user     User   @relation(fields: [userId], references: [psnId])
-  trophy   Trophy @relation(fields: [trophyId], references: [id])
+  earnedAt DateTime?
+  user     User      @relation(fields: [userId], references: [psnId])
+  trophy   Trophy    @relation(fields: [trophyId], references: [id])
 
   @@id([userId, trophyId])
   @@index([userId])

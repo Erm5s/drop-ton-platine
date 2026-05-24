@@ -5,6 +5,7 @@ import {
     getProfileFromUserName,
     getUserTitles,
     getTitleTrophies,
+    getTitleTrophyGroups,
     getUserTrophiesEarnedForTitle,
 } from "psn-api";
 import { prisma } from "@/db";
@@ -102,14 +103,24 @@ export async function fetchProfile(username: string) {
 }
 
 /**
- * Récupère la liste des jeux publics joués par un joueur.
+ * Récupère la liste complète des jeux joués par un joueur, toutes pages confondues.
+ * PSN renvoie 800 jeux max par appel, on pagine jusqu'à tout avoir.
  *
  * @param accountId L'identifiant du compte PSN du joueur
- * @returns La liste des jeux avec progression des trophées
+ * @returns La liste complète des jeux avec progression des trophées
  */
 export async function fetchUserGames(accountId: string) {
     const tokens = await AuthService.getAuth();
-    return getUserTitles(tokens, accountId);
+    const allTitles: Awaited<ReturnType<typeof getUserTitles>>["trophyTitles"] = [];
+    let offset: number | undefined = 0;
+
+    while (offset !== undefined) {
+        const response = await getUserTitles(tokens, accountId, { limit: 800, offset });
+        allTitles.push(...response.trophyTitles);
+        offset = response.nextOffset;
+    }
+
+    return { trophyTitles: allTitles };
 }
 
 /**
@@ -135,4 +146,16 @@ export async function fetchGameTrophies(npCommunicationId: string, platform: str
 export async function fetchEarnedTrophies(accountId: string, npCommunicationId: string, platform: string) {
     const tokens = await AuthService.getAuth();
     return getUserTrophiesEarnedForTitle(tokens, accountId, npCommunicationId, "all", { npServiceName: platform as "trophy" | "trophy2" });
+}
+
+/**
+ * Récupère les groupes de trophées d'un jeu (jeu de base + DLCs).
+ *
+ * @param npCommunicationId L'identifiant unique du jeu sur PSN
+ * @param platform La plateforme du jeu (`"trophy"` pour PS3/PS4/Vita, `"trophy2"` pour PS5)
+ * @returns La liste des groupes avec leur nom et icône
+ */
+export async function fetchTrophyGroups(npCommunicationId: string, platform: string) {
+    const tokens = await AuthService.getAuth();
+    return getTitleTrophyGroups(tokens, npCommunicationId, { npServiceName: platform as "trophy" | "trophy2" });
 }
