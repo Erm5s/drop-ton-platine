@@ -1,8 +1,15 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import HomePage from "@/pages/Home";
+import ProfilePage from "@/pages/Profile";
+
 function App() {
     return (
-        <div className="min-h-screen bg-navy-dark text-foreground font-sans">
-            <h1 className="text-4xl font-bold text-accent p-8">Drop Ton Platine</h1>
-        </div>
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/:username" element={<ProfilePage />} />
+            </Routes>
+        </BrowserRouter>
     );
 }
 
