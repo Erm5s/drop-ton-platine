@@ -55,19 +55,19 @@ export default function Navbar() {
         <header
             className="flex items-center w-full px-4 shrink-0"
             style={{
-                height: "125px",
+                height: "130px",
                 background: "linear-gradient(360deg, var(--color-navy-dark) 0%, var(--color-navy) 100%)",
             }}
         >
-            {/* Logo */}
+            {/* Gauche : Logo */}
             <div className="w-[20%] flex items-center ml-4">
                 <Link to="/">
-                    <img src="/images/name_logo.png" alt="Drop Ton Platine" className="h-18 w-auto" />
+                    <img src="/images/name_logo.png" alt="Drop Ton Platine" className="h-23 w-auto" />
                 </Link>
             </div>
 
             {/* Centre : recherche + navigation */}
-            <div className="w-[60%] flex flex-col items-center gap-4">
+            <div className="w-[60%] flex flex-col items-center gap-5">
                 {/* Barre de recherche */}
                 <form onSubmit={handleSearch} className="relative w-3/5">
                     <input
@@ -110,7 +110,7 @@ export default function Navbar() {
                                 {item.dropdown && (
                                     <ul
                                         className="hidden group-hover:block absolute top-full left-0 list-none p-0 m-0
-                                                   min-w-[280px] z-50 shadow-lg"
+                                                   min-w-70 z-50 shadow-lg"
                                         style={{
                                             background: "linear-gradient(180deg, var(--color-navy-dark) 0%, var(--color-navy) 100%)",
                                         }}
