@@ -8,11 +8,11 @@ export default function HomePage() {
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
         const trimmed = username.trim();
-        if (trimmed) navigate(`/${trimmed}`);
+        if (trimmed) navigate(`/profil/${trimmed}`);
     }
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen gap-8">
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-125px)] gap-8">
             <h1 className="text-4xl font-bold tracking-tight">
                 Drop Ton <span className="text-accent">Platine</span>
             </h1>
