@@ -7,6 +7,20 @@ datasource db {
   provider = "postgresql"
 }
 
+model Account {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  username      String   @unique
+  passwordHash  String
+  psnId         String?  @unique
+  psnVerifyCode String?
+  user          User?    @relation(fields: [psnId], references: [psnId])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([username])
+  @@index([email])
+}
 model User {
   psnId     String      @id
   username  String
@@ -14,6 +28,7 @@ model User {
   stats     UserStats?
   trophies  UserTrophy[]
   games     UserGame[]
+  account   Account?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
