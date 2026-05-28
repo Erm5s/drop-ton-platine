@@ -32,7 +32,14 @@ router.get("/me", requireAuth, async (req, res, next) => {
         // Cherche l'utilisateur dans la DB via l'id dans le cookie 
         const account = await prisma.account.findUnique({
             where: { id: req.accountId },
-            include: { user: { select: { username: true } } },
+            include: { 
+                user: {
+                     select: { 
+                        username: true,
+                        avatarUrl : true
+                    } 
+                }
+            },
         });
         if (!account) throw new AppError(401, "Compte introuvable");
 
@@ -41,6 +48,7 @@ router.get("/me", requireAuth, async (req, res, next) => {
             username: account.username,
             psnId: account.psnId,
             psnUsername: account.user?.username,
+            avatarUrl: account.user?.avatarUrl,
         });
     } catch (err) {
         next(err);
@@ -140,7 +148,7 @@ router.post("/psn/link/start", requireAuth, async (req, res, next) => {
     }
 });
 
-// POST /api//psn/link/verify
+// POST /api/psn/link/verify
 router.post("/psn/link/verify", requireAuth, async (req, res, next) => {
     try {
         const { psnUsername } = req.body;
