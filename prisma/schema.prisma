@@ -10,7 +10,7 @@ datasource db {
 model Account {
   id            String   @id @default(cuid())
   email         String   @unique
-  username      String   @unique
+  username      String?  @unique
   passwordHash  String
   psnId         String?  @unique
   psnVerifyCode String?

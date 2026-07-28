@@ -43,7 +43,7 @@ router.get("/me", requireAuth, async (req, res, next) => {
         });
         if (!account) throw new AppError(401, "Compte introuvable");
 
-        res.json({ // retour json
+        res.json({ // réponse json
             id: account.id,
             username: account.username,
             psnId: account.psnId,
@@ -58,40 +58,27 @@ router.get("/me", requireAuth, async (req, res, next) => {
 // POST /api/register
 router.post("/register", authLimiter, async (req, res, next) => {
     try {
-        const { email, username, password } = req.body;
+        const { email, password } = req.body;
 
-        // Vérifications basiques de remplissage et longueur des champs
-        if (!email || !username || !password)
+        // Vérifications basiques de remplissage des champs
+        if (!email || !password)
             throw new AppError(400, "Tous les champs sont requis");
-        if (username.length < 3 || username.length > 16)
-            throw new AppError(400, "Le pseudo doit faire entre 3 et 16 caractères");
-        if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(username))
-            throw new AppError(400, "Le pseudo ne peut seulement contenir des lettres, chiffres, \"_\" et \"-\"");
-        if (password.length < 8)
-            throw new AppError(400, "Le mot de passe doit faire au moins 8 caractères");
+        if (password.length < 12)
+            throw new AppError(400, "Le mot de passe doit faire au moins 12 caractères");
 
-        // AppError 409 si le mail ou le pseudo est déjà attribué
-        const existing = await prisma.account.findFirst({
-            where: { 
-                OR: [
-                    { email }, 
-                    { username }
-                ] 
-            },
-        });
-        if (existing) {
-            throw new AppError(409, existing.email === email ? "Cet email est déjà utilisé" : "Ce pseudo est déjà utilisé");
-        }
+        // AppError 409 si le mail est déjà attribué
+        const existing = await prisma.account.findUnique({ where: { email } });
+        if (existing) throw new AppError(409, "Cet email est déjà utilisé");
 
         // Hashage du mot de passe et création du compte dans la DB
         const passwordHash = await hashPassword(password);
         const account = await prisma.account.create({
-            data: { email, username, passwordHash },
+            data: { email, passwordHash },
         });
 
         const token = signToken(account.id); // génération du JWT
         res.cookie("token", token, COOKIE_OPTIONS); // envoie du cookie au navigateur
-        res.status(201).json({ id: account.id, username: account.username }); // retour json (HTTP 201 = Created)
+        res.status(201).json({ id: account.id, username: account.username }); // réponse json
     } catch (err) {
         next(err);
     }
@@ -120,7 +107,7 @@ router.post("/login", authLimiter, async (req, res, next) => {
 
         const token = signToken(account.id); // génération du JWT
         res.cookie("token", token, COOKIE_OPTIONS); // envoie du cookie au navigateur
-        res.json({ id: account.id, username: account.username, psnId: account.psnId }); // retour json
+        res.json({ id: account.id, username: account.username, psnId: account.psnId }); // réponse json
     } catch (err) {
         next(err);
     }
@@ -132,8 +119,8 @@ router.post("/logout", (_req, res) => {
     res.json({ ok: true });
 });
 
-// POST /api/link/start
-router.post("/psn/link/start", requireAuth, async (req, res, next) => {
+// POST /api/link-start
+router.post("/psn/link-start", requireAuth, async (req, res, next) => {
     try {
         // Génère un code du format "DTP-XXXXXXXX" et l'enregistre dans la DB
         const code = "DTP-" + Math.random().toString(36).slice(2, 10).toUpperCase();
@@ -142,14 +129,14 @@ router.post("/psn/link/start", requireAuth, async (req, res, next) => {
             data: { psnVerifyCode: code },
         });
 
-        res.json({ code }); // retour json
+        res.json({ code }); // réponse json
     } catch (err) {
         next(err);
     }
 });
 
-// POST /api/psn/link/verify
-router.post("/psn/link/verify", requireAuth, async (req, res, next) => {
+// POST /api/psn/link-verify
+router.post("/psn/link-verify", requireAuth, async (req, res, next) => {
     try {
         const { psnUsername } = req.body;
 
@@ -162,10 +149,26 @@ router.post("/psn/link/verify", requireAuth, async (req, res, next) => {
         if (!account?.psnVerifyCode) 
             throw new AppError(400, "Code non généré");
 
-        // Fetch la bio du compte PSN renseigné et vérifie si elle contient le code
-        const profile = (await fetchProfile(psnUsername)).profile;
-        if (!profile.aboutMe.includes(account.psnVerifyCode))
+
+        // Fetch le compte PSN renseigné et vérifie si elle existe
+        let profile;
+        try {
+            profile = (await fetchProfile(psnUsername)).profile;
+        } catch (err) {
+            if (err instanceof Error && err.message.includes("User not found")) {
+                throw new AppError(404, "Ce compte PSN n'existe pas");
+            }
+            throw err; 
+        }
+
+        // Vérifie si elle contient le code
+        if (!(profile.aboutMe ?? "").includes(account.psnVerifyCode))
             throw new AppError(400, "Code incorrect ou non trouvé dans la bio PSN");
+
+        // Vérifie si ce compte PSN est déjà lié à un autre compte DTP
+        const alreadyLinked = await prisma.account.findUnique({ where: { psnId: profile.accountId } });
+        if (alreadyLinked && alreadyLinked.id !== req.accountId)
+            throw new AppError(409, "Ce compte PSN est déjà lié à un autre compte DTP");
 
         // Associe le compte PSN au compte DTP si tout est bon
         await prisma.account.update({
@@ -173,7 +176,7 @@ router.post("/psn/link/verify", requireAuth, async (req, res, next) => {
             data: { psnId: profile.accountId, psnVerifyCode: null },
         });
 
-        res.json({ ok: true, psnId: profile.accountId, psnUsername: profile.onlineId }); // retour json
+        res.json({ ok: true, psnId: profile.accountId, psnUsername: profile.onlineId }); // réponse json
     } catch (err) {
         next(err);
     }

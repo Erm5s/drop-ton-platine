@@ -15,7 +15,10 @@ const PORT = process.env.PORT;
 // Headers HTTP automatiques
 app.use(helmet());
 // Autorise tous les ports à appeler l'API
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+}));
 // Permet de lire le body JSON des requêtes POST/PUT
 app.use(express.json());
 // Parse les cookies entrants pour rendre req.cookies disponible
