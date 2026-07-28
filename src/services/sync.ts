@@ -117,16 +117,12 @@ async function syncGame(gameId: string, title: string, platform: string, iconUrl
     // Nécessite une sychronisation avec la DB si le jeu n'est pas déjà dedans ou si la version n'est pas à jour
     const needsTrophySync = !existing || existing.trophySetVersion !== trophySetVersion;
 
-    // Si le jeu n'existe pas dans la DB, on l'enregistre
+    // On crée la ligne Game avant d'insérer ses trophées (contrainte FK Trophy.gameId),
+    // mais SANS écrire trophySetVersion : ce champ sert de témoin de "sync terminée" et
+    // n'est renseigné qu'une fois TOUS les trophées insérés (à la fin du bloc ci-dessous).
     if (!existing) {
         await prisma.game.create({
-            data: { id: gameId, title, platform, iconUrl, trophySetVersion },
-        });
-    // Sinon, si le jeu existe et que la liste de trophées à une nouvelle version, on le met à jour
-    } else if (existing.trophySetVersion !== trophySetVersion) {
-        await prisma.game.update({
-            where: { id: gameId },
-            data: { title, platform, iconUrl, trophySetVersion },
+            data: { id: gameId, title, platform, iconUrl },
         });
     }
 
@@ -160,5 +156,12 @@ async function syncGame(gameId: string, title: string, platform: string, iconUrl
                 create: { id: trophyId, ...trophyData },
             });
         }
+
+        // Témoin écrit en dernier : si la sync a planté avant ici, trophySetVersion reste
+        // incohérent et le jeu (avec tous ses trophées) sera resynchronisé au prochain passage.
+        await prisma.game.update({
+            where: { id: gameId },
+            data: { title, platform, iconUrl, trophySetVersion },
+        });
     }
 }
