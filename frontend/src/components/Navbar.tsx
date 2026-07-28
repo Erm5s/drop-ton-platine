@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 type DropdownItem = { label: string; href: string };
 type NavItem = { label: string; href?: string; dropdown?: DropdownItem[] };
@@ -43,12 +44,20 @@ const navItems: NavItem[] = [
 
 export default function Navbar() {
     const [search, setSearch] = useState("");
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
 
     function handleSearch(e: FormEvent) {
         e.preventDefault();
         const trimmed = search.trim();
         if (trimmed) navigate(`/${trimmed}`);
+    }
+
+    async function handleLogout() {
+        await logout();
+        setUserMenuOpen(false);
+        navigate("/");
     }
 
     return (
@@ -137,16 +146,53 @@ export default function Navbar() {
                 </nav>
             </div>
 
-            {/* Droite : connexion */}
+            {/* Droite : connexion ou menu utilisateur */}
             <div className="w-[20%] flex items-center justify-end pr-4">
-                <Link
-                    to="/connexion"
-                    className="text-white no-underline font-bold uppercase text-[1.1em] px-4 py-3
-                               rounded-[10px] border-[3px] border-blue bg-blue
-                               hover:bg-white hover:text-blue transition-colors"
-                >
-                    Connexion
-                </Link>
+                {user ? (
+                    <div className="relative">
+                        <button
+                            onClick={() => setUserMenuOpen((o) => !o)}
+                            className="text-white font-bold uppercase text-[1.1em] px-4 py-3
+                                       rounded-[10px] border-[3px] border-blue bg-blue
+                                       hover:bg-white hover:text-blue transition-colors"
+                        >
+                            {user.psnUsername ?? user.username ?? "Mon compte"}
+                        </button>
+                        {userMenuOpen && (
+                            <ul
+                                className="absolute right-0 top-full mt-1 list-none p-0 m-0 min-w-48 z-50 shadow-lg rounded-lg overflow-hidden"
+                                style={{ background: "linear-gradient(180deg, var(--color-navy-dark) 0%, var(--color-navy) 100%)" }}
+                            >
+                                <li>
+                                    <Link
+                                        to={user.psnId ? `/profile/${user.psnUsername}` : "/link-psn"}
+                                        onClick={() => setUserMenuOpen(false)}
+                                        className="block px-5 py-3 text-white uppercase text-sm font-medium hover:text-accent transition-colors"
+                                    >
+                                        {user.psnId ? "Mon profil" : "Lier PSN"}
+                                    </Link>
+                                </li>
+                                <li>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full text-left px-5 py-3 text-white uppercase text-sm font-medium hover:text-accent transition-colors"
+                                    >
+                                        Déconnexion
+                                    </button>
+                                </li>
+                            </ul>
+                        )}
+                    </div>
+                ) : (
+                    <Link
+                        to="/connection"
+                        className="text-white no-underline font-bold uppercase text-[1.1em] px-4 py-3
+                                   rounded-[10px] border-[3px] border-blue bg-blue
+                                   hover:bg-white hover:text-blue transition-colors"
+                    >
+                        Connexion
+                    </Link>
+                )}
             </div>
         </header>
     );

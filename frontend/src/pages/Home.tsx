@@ -8,7 +8,7 @@ export default function HomePage() {
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
         const trimmed = username.trim();
-        if (trimmed) navigate(`/profil/${trimmed}`);
+        if (trimmed) navigate(`/profile/${trimmed}`);
     }
 
     return (
