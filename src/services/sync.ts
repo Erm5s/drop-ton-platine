@@ -111,20 +111,18 @@ async function syncUserGames(accountId: string) {
  * @param npServiceName La plateforme pour l'API ("trophy" ou "trophy2")
  */
 async function syncGame(gameId: string, title: string, platform: string, iconUrl: string, trophySetVersion: string, npServiceName: "trophy" | "trophy2") {
-   // Récupération du jeu à synchroniser
+    // Récupération du jeu à synchroniser
     const existing = await prisma.game.findUnique({ where: { id: gameId } });
 
     // Nécessite une sychronisation avec la DB si le jeu n'est pas déjà dedans ou si la version n'est pas à jour
     const needsTrophySync = !existing || existing.trophySetVersion !== trophySetVersion;
 
-    // On crée la ligne Game avant d'insérer ses trophées (contrainte FK Trophy.gameId),
-    // mais SANS écrire trophySetVersion : ce champ sert de témoin de "sync terminée" et
-    // n'est renseigné qu'une fois TOUS les trophées insérés (à la fin du bloc ci-dessous).
-    if (!existing) {
-        await prisma.game.create({
-            data: { id: gameId, title, platform, iconUrl },
-        });
-    }
+    // Ajout du jeu dans la base s'il n'existe pas 
+    await prisma.game.upsert({
+        where: { id: gameId },
+        create: { id: gameId, title, platform, iconUrl },
+        update: {},
+    });
 
     if (needsTrophySync) {
         // Sychronisation des données des listes (jeu de base et DLC)
@@ -157,8 +155,7 @@ async function syncGame(gameId: string, title: string, platform: string, iconUrl
             });
         }
 
-        // Témoin écrit en dernier : si la sync a planté avant ici, trophySetVersion reste
-        // incohérent et le jeu (avec tous ses trophées) sera resynchronisé au prochain passage.
+        // Mise à jour des infos du jeu à la fin de la synchronisation
         await prisma.game.update({
             where: { id: gameId },
             data: { title, platform, iconUrl, trophySetVersion },
