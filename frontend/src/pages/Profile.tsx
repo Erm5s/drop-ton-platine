@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { fetchProfile, type Profile } from "@/lib/api";
+import GameCard from "@/components/GameCard";
 
 export default function ProfilePage() {
     const { username } = useParams<{ username: string }>();
@@ -94,45 +95,40 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            {/* Contenu principal */}
-            <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
+            {/* Contenu principal : jeux à gauche, colonne pub à droite */}
+            <div className="w-full px-6 py-10 flex gap-6 items-start bg-white">
 
-                {/* Liste des jeux */}
-                <div>
-                    <h2 className="text-xl font-semibold mb-4">
-                        Jeux ({games.length})
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {games.map(({ game, lastUpdatedDateTime }) => (
-                            <div key={game.id} className="bg-card rounded-lg overflow-hidden">
-                                {game.iconUrl ? (
-                                    <img
-                                        src={game.iconUrl}
-                                        alt={game.title}
-                                        className="w-full aspect-square object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-full aspect-square bg-navy flex items-center justify-center">
-                                        <span className="text-muted-foreground text-xs text-center px-2">
-                                            {game.title}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="p-2">
-                                    <p className="text-sm font-medium truncate" title={game.title}>
-                                        {game.title}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">{game.platform}</p>
-                                    {lastUpdatedDateTime && (
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {new Date(lastUpdatedDateTime).toLocaleDateString("fr-FR")}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                {/* Colonne principale */}
+                <div className="flex-1 min-w-0 space-y-10">
+                    {/* Liste de trophées */}
+                    <div>
+                        <h2
+                            className="text-center text-white text-xl font-semibold py-3 mb-4"
+                            style={{ background: "linear-gradient(360deg, var(--color-navy-dark), var(--color-navy))" }}
+                        >
+                            Liste de trophées
+                        </h2>
+                        <div className="flex flex-col bg-white">
+                            {games.map(({ game, earned, total }) => (
+                                <GameCard
+                                    key={game.id}
+                                    title={game.title}
+                                    iconUrl={game.iconUrl}
+                                    platform={game.platform}
+                                    earned={earned}
+                                    total={total}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
+
+                {/* Colonne publicité (masquée sur petit écran), suit le défilement */}
+                <aside className="hidden lg:block w-[250px] shrink-0">
+                    <div className="sticky top-4 h-[600px] bg-card border border-border flex items-center justify-center">
+                        <span className="text-muted-foreground text-sm">PUB</span>
+                    </div>
+                </aside>
             </div>
         </div>
     );

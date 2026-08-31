@@ -37,6 +37,8 @@ export type Game = {
 export type UserGame = {
     gameId: string;
     lastUpdatedDateTime: string | null;
+    earned: number;
+    total: number;
     game: Game;
 };
 
