@@ -47,16 +47,36 @@ model UserStats {
 }
 
 model Game {
-  id              String        @id
-  title           String
-  platforms       String[]
-  iconUrl         String?
+  id               String        @id
+  title            String
+  platforms        String[]
+  iconUrl          String?
+  description      String?
+  npServiceName    String?       // "trophy" ou "trophy2"
   trophySetVersion String?
-  trophies        Trophy[]
-  trophyGroups    TrophyGroup[]
-  users           UserGame[]
+
+  // Nombre de trophées définis par le jeu
+  bronze           Int?
+  silver           Int?
+  gold             Int?
+  platinum         Int?
+
+  trophies         Trophy[]
+  trophyGroups     TrophyGroup[]
+  users            UserGame[]
 
   @@index([title])
+}
+
+// Trace chaque npCommunicationId déjà sondé par le crawler, y compris les inexistants,
+// pour pouvoir reprendre après une interruption sans refaire les mêmes requêtes.
+model CatalogScan {
+  id        String   @id // "NPWR00042_00"
+  index     Int      @unique // 42 : sert à reprendre là où on s'est arrêté
+  found     Boolean
+  scannedAt DateTime @default(now())
+
+  @@index([found])
 }
 
 model TrophyGroup {
