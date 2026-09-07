@@ -49,9 +49,9 @@ model UserStats {
 model Game {
   id               String        @id
   title            String
-  platforms        String[]
+  platforms        String[]      
   iconUrl          String?
-  description      String?
+  description      String?       
   npServiceName    String?       // "trophy" ou "trophy2"
   trophySetVersion String?
 
@@ -61,12 +61,17 @@ model Game {
   gold             Int?
   platinum         Int?
 
+  // Clé de tri
+  sortKey          String        @default("")
+
   trophies         Trophy[]
   trophyGroups     TrophyGroup[]
   users            UserGame[]
 
   // Tri alphabétique du catalogue quand aucune recherche n'est active
   @@index([title])
+  // Sert l'ordre d'affichage du catalogue, id compris pour départager les titres identiques
+  @@index([sortKey, id])
   // Recherche "contient" insensible à la casse : un index classique ne sait pas la servir.
   // L'extension pg_trgm est créée dans la migration qui accompagne cet index.
   @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "Game_title_trgm_idx")
@@ -131,7 +136,7 @@ model UserTrophy {
   user     User      @relation(fields: [userId], references: [psnId])
   trophy   Trophy    @relation(fields: [gameId, trophyId], references: [gameId, trophyId])
 
-
+  
   @@id([userId, gameId, trophyId])
   @@index([gameId, trophyId, earnedAt])
   @@index([earnedAt])

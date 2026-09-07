@@ -27,13 +27,14 @@ router.get("/", async (req, res, next) => {
         // Une recherche vide ne doit pas filtrer : on liste tout le catalogue
         const where = search ? { title: { contains: search, mode: "insensitive" as const } } : {};
 
-        // Tri par titre : l'id départage les titres identiques (variantes régionales d'un même
-        // jeu). Sans ce second critère, l'ordre des ex æquo n'est pas garanti et la pagination
-        // par OFFSET peut afficher deux fois le même jeu, ou en sauter un.
+        // Tri par titre : on trie sur sortKey, pas sur title. Cette colonne encode l'ordre
+        // voulu (ponctuation, chiffres, alphabet latin, puis écritures étrangères), que la
+        // collation de la base ne sait pas produire. L'id départage les titres identiques,
+        // sans quoi la pagination par OFFSET pourrait répéter ou sauter un jeu.
         // Tri par id : l'id étant unique, il se suffit à lui-même.
         const orderBy = sort === "id"
             ? [{ id: "asc" as const }]
-            : [{ title: "asc" as const }, { id: "asc" as const }];
+            : [{ sortKey: "asc" as const }, { id: "asc" as const }];
 
         // Les deux requêtes partent ensemble : le total sert à calculer le nombre de pages
         const [games, total] = await Promise.all([
