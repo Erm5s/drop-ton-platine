@@ -65,7 +65,11 @@ model Game {
   trophyGroups     TrophyGroup[]
   users            UserGame[]
 
+  // Tri alphabétique du catalogue quand aucune recherche n'est active
   @@index([title])
+  // Recherche "contient" insensible à la casse : un index classique ne sait pas la servir.
+  // L'extension pg_trgm est créée dans la migration qui accompagne cet index.
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "Game_title_trgm_idx")
 }
 
 // Trace chaque npCommunicationId déjà sondé par le crawler, y compris les inexistants,

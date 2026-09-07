@@ -7,7 +7,7 @@ type NavItem = { label: string; href?: string; dropdown?: DropdownItem[] };
 
 const navItems: NavItem[] = [
     { label: "Accueil", href: "/" },
-    { label: "Jeux", href: "/jeux" },
+    { label: "Jeux", href: "/games" },
     {
         label: "Entraide",
         dropdown: [

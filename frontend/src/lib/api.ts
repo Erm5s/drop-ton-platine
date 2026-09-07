@@ -34,6 +34,25 @@ export type Game = {
     iconUrl: string | null;
 };
 
+/** Jeu du catalogue : porte le nombre de trophées définis, sans progression d'un joueur. */
+export type CatalogGame = Game & {
+    bronze: number | null;
+    silver: number | null;
+    gold: number | null;
+    platinum: number | null;
+};
+
+export type GameSort = "title" | "id";
+
+export type GameList = {
+    games: CatalogGame[];
+    total: number;
+    page: number;
+    sort: GameSort;
+    limit: number;
+    totalPages: number;
+};
+
 export type UserGame = {
     gameId: string;
     lastUpdatedDateTime: string | null;
@@ -61,6 +80,15 @@ export type Profile = {
 
 export function fetchProfile(username: string) {
     return get<Profile>(`/api/profile/${username}`);
+}
+
+export function fetchGames({ search, page, sort }: { search?: string; page?: number; sort?: GameSort }) {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (page) params.set("page", String(page));
+    if (sort) params.set("sort", sort);
+
+    return get<GameList>(`/api/games?${params}`);
 }
 
 export async function register(email: string, password: string) {
