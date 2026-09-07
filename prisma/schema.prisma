@@ -60,31 +60,32 @@ model Game {
 }
 
 model TrophyGroup {
-  id       String    @id  // "${gameId}-${groupId}" ex: "NPWR12345_00-default"
   gameId   String
+  groupId  String    // identifiant PSN
   game     Game      @relation(fields: [gameId], references: [id])
-  groupId  String    // identifiant PSN brut : "default", "001", "002"...
   name     String
   iconUrl  String?
   trophies Trophy[]
 
-  @@index([gameId])
+  @@id([gameId, groupId])
 }
 
 model Trophy {
-  id            String       @id
-  gameId        String
-  game          Game         @relation(fields: [gameId], references: [id])
-  trophyGroupId String
-  trophyGroup   TrophyGroup  @relation(fields: [trophyGroupId], references: [id])
-  name          String
-  description   String?
-  rarity        TrophyRarity
-  iconUrl       String?
-  users         UserTrophy[]
+  gameId      String
+  trophyId    Int             // identifiant PSN
+  groupId     String
+  game        Game            @relation(fields: [gameId], references: [id])
+  trophyGroup TrophyGroup     @relation(fields: [gameId, groupId], references: [gameId, groupId])
+  name        String
+  description String?
+  type        TrophyType      // la rareté du trophée (bronze/argent/or/platine)
+  rareness    TrophyRareness? // le palier de rareté calculé par PSN
+  earnedRate  Float?          // le % d'obtention du trophée
+  hidden      Boolean         @default(false) // trophée masqué ou non
+  iconUrl     String?
+  users       UserTrophy[]
 
-  @@index([gameId])
-  @@index([rarity])
+  @@id([gameId, trophyId])
 }
 
 model UserGame {
@@ -100,21 +101,30 @@ model UserGame {
 
 model UserTrophy {
   userId   String
-  trophyId String
+  gameId   String
+  trophyId Int
   earnedAt DateTime?
   user     User      @relation(fields: [userId], references: [psnId])
-  trophy   Trophy    @relation(fields: [trophyId], references: [id])
+  trophy   Trophy    @relation(fields: [gameId, trophyId], references: [gameId, trophyId])
 
-  @@id([userId, trophyId])
-  @@index([userId])
+
+  @@id([userId, gameId, trophyId])
+  @@index([gameId, trophyId, earnedAt])
   @@index([earnedAt])
 }
 
-enum TrophyRarity {
+enum TrophyType {
   bronze
   silver
   gold
   platinum
+}
+
+enum TrophyRareness {
+  ultraRare
+  veryRare
+  rare
+  common
 }
 
 model SystemConfig {

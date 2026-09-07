@@ -41,14 +41,12 @@ router.get("/:username", async (req, res, next) => {
         }
 
         // Compte les trophées débloqués par le joueur, regroupés par jeu.
-        const earnedRows = await prisma.userTrophy.findMany({
+        const earnedRows = await prisma.userTrophy.groupBy({
+            by: ["gameId"],
             where: { userId: user.psnId },
-            select: { trophy: { select: { gameId: true } } },
+            _count: { _all: true },
         });
-        const earnedByGame = new Map<string, number>();
-        for (const row of earnedRows) {
-            earnedByGame.set(row.trophy.gameId, (earnedByGame.get(row.trophy.gameId) ?? 0) + 1);
-        }
+        const earnedByGame = new Map(earnedRows.map((row) => [row.gameId, row._count._all]));
 
         res.json({
             psnId: user.psnId,
@@ -63,7 +61,7 @@ router.get("/:username", async (req, res, next) => {
                 game: {
                     id: ug.game.id,
                     title: ug.game.title,
-                    platform: ug.game.platform,
+                    platforms: ug.game.platforms,
                     iconUrl: ug.game.iconUrl,
                 },
             })),

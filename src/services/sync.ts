@@ -1,13 +1,34 @@
 import { prisma } from "@/db";
 import { fetchProfile, fetchUserGames, fetchTrophyGroups, fetchGameTrophies, fetchEarnedTrophies } from "@/services/psn";
+import { buildGameSortKey, formatTrophyTitleName } from "@/utils/trophyTitleName";
 
 // L'API utilise "trophy2" pour les jeux PS5 et "trophy" pour toutes les autres platformes
 function getPlatform(trophyTitlePlatform: string): "trophy" | "trophy2" {
     return trophyTitlePlatform.includes("PS5") ? "trophy2" : "trophy";
 }
 
+// Normalisation des noms de platforme 
+const PLATFORM_ALIAS: Record<string, string> = { VITA: "PSVITA", PC: "PSPC" };
+
+// L'API renvoie les noms des platfromes sous forme de string séparé par des virgules
+export function parsePlatforms(trophyTitlePlatform: string): string[] {
+    return trophyTitlePlatform
+        .split(",")
+        .map(p => p.trim().toUpperCase())
+        .filter(Boolean)
+        .map(p => PLATFORM_ALIAS[p] ?? p);
+}
+
+// L'API renvoie la rareté sous forme d'entier 
+// (UltraRare = 0, VeryRare =  1, Rare = 2, Common = 3)
+const RARENESS = ["ultraRare", "veryRare", "rare", "common"] as const;
+
+function getRareness(trophyRare: number | undefined) {
+    return trophyRare === undefined ? null : RARENESS[trophyRare] ?? null;
+}
+
 /**
- * Synchronise le profil, les stats, et tous les jeux/trophées d'un joueur PSN.
+ * Synchronise le profil, les stats, et tous les jeux et trophées d'un joueur PSN.
  *
  * @param username Le pseudo PSN du joueur
  * @returns L'utilisateur en base de données
@@ -62,7 +83,7 @@ async function syncUserGames(accountId: string) {
     for (const title of trophyTitles) {
         const gameId = title.npCommunicationId;
         const lastUpdated = new Date(title.lastUpdatedDateTime);
-        const platform = getPlatform(title.trophyTitlePlatform);
+        const npServiceName = getPlatform(title.trophyTitlePlatform);
 
         // Recherche d'un jeu d'un joueur dans la DB
         const userGame = await prisma.userGame.findUnique({
@@ -75,22 +96,37 @@ async function syncUserGames(accountId: string) {
         }
 
         // Vérification si la liste des trophées nécessite une mise à jour
-        await syncGame(gameId, title.trophyTitleName, title.trophyTitlePlatform, title.trophyTitleIconUrl, title.trophySetVersion, platform);
+        const trophySetSynced = await syncGame(gameId, formatTrophyTitleName(title.trophyTitleName), parsePlatforms(title.trophyTitlePlatform), title.trophyTitleIconUrl, title.trophySetVersion, npServiceName);
 
         // On enregistre les trophées obtenus par le joueur sur ce jeu
-        const { trophies: earnedTrophies } = await fetchEarnedTrophies(accountId, gameId, platform);
+        const { trophies: earnedTrophies } = await fetchEarnedTrophies(accountId, gameId, npServiceName);
         const earned = earnedTrophies.filter(t => t.earned);
 
+        // Enregistrement de la rareté des trophées si la listé nécessite une mise à jour
+        if (trophySetSynced) {
+            for (const t of earnedTrophies) {
+                await prisma.trophy.updateMany({
+                    where: { gameId, trophyId: t.trophyId },
+                    data: {
+                        rareness: getRareness(t.trophyRare),
+                        earnedRate: t.trophyEarnedRate ? Number(t.trophyEarnedRate) : null,
+                    },
+                });
+            }
+        }
+
+        // Mise à jour des trophées obtenus pour ce jeu
         await prisma.userTrophy.createMany({
             data: earned.map(t => ({
                 userId: accountId,
-                trophyId: `${gameId}-${t.trophyId}`,
+                gameId,
+                trophyId: t.trophyId,
                 ...(t.earnedDateTime ? { earnedAt: new Date(t.earnedDateTime) } : {}),
             })),
             skipDuplicates: true,
         });
 
-        // On met à jour la date de dernière sync pour ce jeu
+        // Enregistement de la date de dernière sync pour ce jeu
         await prisma.userGame.upsert({
             where: { userId_gameId: { userId: accountId, gameId } },
             update: { lastUpdatedDateTime: lastUpdated },
@@ -105,60 +141,63 @@ async function syncUserGames(accountId: string) {
  *
  * @param gameId L'identifiant unique du jeu (npCommunicationId)
  * @param title Le nom du jeu
- * @param platform La plateforme (PSVITA/PS3/PS5/PS5/PC)
+ * @param platforms Les plateformes du jeu, déjà découpées (ex: ["PS4", "PS5"])
  * @param iconUrl L'URL de l'icône du jeu
  * @param trophySetVersion La version de la liste de trophées
  * @param npServiceName La plateforme pour l'API ("trophy" ou "trophy2")
+ * @returns true si la liste de trophées vient d'être (re)construite
  */
-async function syncGame(gameId: string, title: string, platform: string, iconUrl: string, trophySetVersion: string, npServiceName: "trophy" | "trophy2") {
+async function syncGame(gameId: string, title: string, platforms: string[], iconUrl: string, trophySetVersion: string, npServiceName: "trophy" | "trophy2") {
     // Récupération du jeu à synchroniser
     const existing = await prisma.game.findUnique({ where: { id: gameId } });
 
     // Nécessite une sychronisation avec la DB si le jeu n'est pas déjà dedans ou si la version n'est pas à jour
     const needsTrophySync = !existing || existing.trophySetVersion !== trophySetVersion;
 
-    // Ajout du jeu dans la base s'il n'existe pas 
+    // Ajout du jeu dans la base s'il n'existe pas, sinon rafraîchissement de ses infos
+    // (le titre et l'icône peuvent changer côté PSN sans que la liste de trophées bouge)
     await prisma.game.upsert({
         where: { id: gameId },
-        create: { id: gameId, title, platform, iconUrl },
-        update: {},
+        create: { id: gameId, title, sortKey: buildGameSortKey(title), platforms, iconUrl },
+        update: { title, sortKey: buildGameSortKey(title), platforms, iconUrl },
     });
 
     if (needsTrophySync) {
         // Sychronisation des données des listes (jeu de base et DLC)
         const { trophyGroups } = await fetchTrophyGroups(gameId, npServiceName);
         for (const g of trophyGroups) {
-            const groupId = `${gameId}-${g.trophyGroupId}`;
+            const groupData = { name: g.trophyGroupName, iconUrl: g.trophyGroupIconUrl ?? null };
             await prisma.trophyGroup.upsert({
-                where: { id: groupId },
-                update: { name: g.trophyGroupName, iconUrl: g.trophyGroupIconUrl ?? null },
-                create: { id: groupId, gameId, groupId: g.trophyGroupId, name: g.trophyGroupName, iconUrl: g.trophyGroupIconUrl ?? null },
+                where: { gameId_groupId: { gameId, groupId: g.trophyGroupId } },
+                update: groupData,
+                create: { gameId, groupId: g.trophyGroupId, ...groupData },
             });
         }
 
         // Sychronisation des données des trophées individuelles
         const { trophies } = await fetchGameTrophies(gameId, npServiceName);
         for (const t of trophies) {
-            const trophyId = `${gameId}-${t.trophyId}`;
             const trophyData = {
-                gameId,
-                trophyGroupId: `${gameId}-${t.trophyGroupId ?? "default"}`,
+                groupId: t.trophyGroupId ?? "default",
                 name: t.trophyName ?? "",
                 description: t.trophyDetail ?? null,
-                rarity: t.trophyType,
+                type: t.trophyType,
+                hidden: t.trophyHidden,
                 iconUrl: t.trophyIconUrl ?? null,
             };
             await prisma.trophy.upsert({
-                where: { id: trophyId },
+                where: { gameId_trophyId: { gameId, trophyId: t.trophyId } },
                 update: trophyData,
-                create: { id: trophyId, ...trophyData },
+                create: { gameId, trophyId: t.trophyId, ...trophyData },
             });
         }
 
-        // Mise à jour des infos du jeu à la fin de la synchronisation
+        // Marque la liste comme synchronisée.
         await prisma.game.update({
             where: { id: gameId },
-            data: { title, platform, iconUrl, trophySetVersion },
+            data: { trophySetVersion },
         });
     }
+
+    return needsTrophySync;
 }
