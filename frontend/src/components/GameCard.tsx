@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 type TrophyCounts = {
     bronze: number | null;
     silver: number | null;
@@ -59,15 +61,41 @@ export default function GameCard({ title, iconUrl, platforms, earned, total, tro
 
             {/* Plateformes : un jeu cross-gen en a plusieurs (ex: PS4 + PS5) */}
             {platforms.length > 0 && (
-                <div className="flex gap-1 shrink-0 self-start">
+                <div className="flex flex-col items-end -space-y-1.5 shrink-0 self-start">
                     {platforms.map((p) => (
-                        <span key={p} className="bg-navy-dark text-white text-xs font-bold px-2 py-1">
-                            {p}
-                        </span>
+                        <PlatformBadge key={p} platform={p} />
                     ))}
                 </div>
             )}
         </div>
+    );
+}
+
+/**
+ * Logo de la plateforme, nommé d'après sa valeur en base : PS4 -> /images/platforms/ps4.png
+ *
+ * Toutes les plateformes n'ont pas encore de logo. Plutôt que d'afficher une image cassée,
+ * on retombe sur l'ancien badge texte tant que le fichier n'existe pas.
+ */
+function PlatformBadge({ platform }: { platform: string }) {
+    const [failed, setFailed] = useState(false);
+
+    if (failed) {
+        return (
+            <span className="bg-navy-dark text-white text-xs font-bold px-2 py-1">
+                {platform}
+            </span>
+        );
+    }
+
+    return (
+        <img
+            src={`/images/platforms/${platform.toLowerCase()}.png`}
+            alt={platform}
+            title={platform}
+            className="h-6 w-auto object-contain"
+            onError={() => setFailed(true)}
+        />
     );
 }
 
