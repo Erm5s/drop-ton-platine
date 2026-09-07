@@ -49,7 +49,7 @@ model UserStats {
 model Game {
   id              String        @id
   title           String
-  platform        String?
+  platforms       String[]
   iconUrl         String?
   trophySetVersion String?
   trophies        Trophy[]

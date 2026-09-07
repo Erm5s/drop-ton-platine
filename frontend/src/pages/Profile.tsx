@@ -114,7 +114,7 @@ export default function ProfilePage() {
                                     key={game.id}
                                     title={game.title}
                                     iconUrl={game.iconUrl}
-                                    platform={game.platform}
+                                    platforms={game.platforms}
                                     earned={earned}
                                     total={total}
                                 />

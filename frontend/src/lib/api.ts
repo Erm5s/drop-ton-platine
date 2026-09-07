@@ -30,7 +30,7 @@ async function post<T = unknown>(path: string, body: unknown): Promise<T> {
 export type Game = {
     id: string;
     title: string;
-    platform: string | null;
+    platforms: string[];
     iconUrl: string | null;
 };
 

@@ -1,12 +1,12 @@
 type GameCardProps = {
     title: string;
     iconUrl: string | null;
-    platform: string | null;
+    platforms: string[];
     earned: number;
     total: number;
 };
 
-export default function GameCard({ title, iconUrl, platform, earned, total }: GameCardProps) {
+export default function GameCard({ title, iconUrl, platforms, earned, total }: GameCardProps) {
     const percent = total > 0 ? Math.round((earned / total) * 100) : 0;
     
     return (
@@ -39,11 +39,15 @@ export default function GameCard({ title, iconUrl, platform, earned, total }: Ga
                 </div>
             </div>
 
-            {/* Plateforme */}
-            {platform && (
-                <span className="bg-navy-dark text-white text-xs font-bold px-2 py-1 shrink-0 self-start">
-                    {platform}
-                </span>
+            {/* Plateformes : un jeu cross-gen en a plusieurs (ex: PS4 + PS5) */}
+            {platforms.length > 0 && (
+                <div className="flex gap-1 shrink-0 self-start">
+                    {platforms.map((p) => (
+                        <span key={p} className="bg-navy-dark text-white text-xs font-bold px-2 py-1">
+                            {p}
+                        </span>
+                    ))}
+                </div>
             )}
         </div>
     );
