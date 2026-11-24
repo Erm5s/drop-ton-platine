@@ -33,6 +33,7 @@ const PREFIX_PATTERNS = [
 // Ordre significatif : le premier motif qui correspond est le seul appliqué.
 const SUFFIX_PATTERNS = [
     /\s*Trophy Set\.$/i,
+    /\s*Trophy Pack$/i,
     /\s*Trophy Set$/i,
     /\s*Trophyset\.$/i,
     /\s*Trophyset$/i,
