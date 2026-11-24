@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { fetchGames, type GameList, type GameSort } from "@/lib/api";
 import GameCard from "@/components/GameCard";
 
@@ -106,8 +107,8 @@ export default function GamesPage() {
             {/* La liste garde sa place pendant un chargement, pour éviter que la page saute */}
             <div className={`flex flex-col bg-white transition-opacity ${loading ? "opacity-50" : ""}`}>
                 {data?.games.map((game) => (
+                    <Link key={game.id} to={`/games/${game.id}`}>
                     <GameCard
-                        key={game.id}
                         title={game.title}
                         iconUrl={game.iconUrl}
                         platforms={game.platforms}
@@ -115,6 +116,7 @@ export default function GamesPage() {
                         difficulty={game.difficulty}
                         points={game.points}
                     />
+                    </Link>
                 ))}
             </div>
 

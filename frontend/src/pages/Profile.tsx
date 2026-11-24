@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { fetchProfile, type Profile } from "@/lib/api";
 import GameCard from "@/components/GameCard";
 
@@ -110,8 +110,8 @@ export default function ProfilePage() {
                         </h2>
                         <div className="flex flex-col bg-white">
                             {games.map(({ game, earned, total, earnedPoints, maxPoints, counted }) => (
+                                <Link key={game.id} to={`/games/${game.id}?user=${profile.username}`}>
                                 <GameCard
-                                    key={game.id}
                                     title={game.title}
                                     iconUrl={game.iconUrl}
                                     platforms={game.platforms}
@@ -121,6 +121,7 @@ export default function ProfilePage() {
                                     maxPoints={maxPoints}
                                     counted={counted}
                                 />
+                                </Link>
                             ))}
                         </div>
                     </div>

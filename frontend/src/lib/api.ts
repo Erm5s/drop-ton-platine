@@ -56,6 +56,52 @@ export type GameList = {
     totalPages: number;
 };
 
+export type Trophy = {
+    trophyId: number;
+    name: string;
+    description: string | null;
+    type: "bronze" | "silver" | "gold" | "platinum";
+    rareness: "ultraRare" | "veryRare" | "rare" | "common" | null;
+    earnedRate: number | null;
+    hidden: boolean;
+    iconUrl: string | null;
+    /** Obtenu par le joueur demandé. Toujours faux si aucun joueur n'est précisé. */
+    earned: boolean;
+    /** Date d'obtention. Peut être nulle sur un trophée obtenu, PSN ne la fournissant pas toujours. */
+    earnedAt: string | null;
+};
+
+export type TrophyGroup = {
+    groupId: string;
+    name: string;
+    iconUrl: string | null;
+    /** Vrai pour la liste de base, faux pour un DLC. */
+    isBase: boolean;
+    trophies: Trophy[];
+};
+
+/** Progression d'un joueur sur un jeu précis. Null si aucun joueur n'est demandé. */
+export type GamePlayer = {
+    username: string;
+    avatarUrl: string | null;
+    earnedTrophies: number;
+    totalTrophies: number;
+    percent: number;
+    earnedPoints: number;
+    maxPoints: number;
+};
+
+export type GameDetail = CatalogGame & {
+    description: string | null;
+    player: GamePlayer | null;
+    groups: TrophyGroup[];
+};
+
+export function fetchGame(id: string, user?: string) {
+    const params = user ? `?user=${encodeURIComponent(user)}` : "";
+    return get<GameDetail>(`/api/games/${id}${params}`);
+}
+
 export type UserGame = {
     gameId: string;
     lastUpdatedDateTime: string | null;

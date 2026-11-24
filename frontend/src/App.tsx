@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import HomePage from "@/pages/Home";
 import ProfilePage from "@/pages/Profile";
 import GamesPage from "@/pages/Games";
+import GamePage from "@/pages/Game";
 import ConnectionPage from "@/pages/Connection";
 import LinkPSNPage from "@/pages/LinkPSN";
 
@@ -18,6 +19,7 @@ function App() {
                             <Route path="/" element={<HomePage />} />
                             <Route path="/profile/:username" element={<ProfilePage />} />
                             <Route path="/games" element={<GamesPage />} />
+                            <Route path="/games/:id" element={<GamePage />} />
                             <Route path="/connection" element={<ConnectionPage />} />
                             <Route path="/link-psn" element={<LinkPSNPage />} />
                         </Routes>
