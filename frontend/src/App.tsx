@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
+import ScrollToTop from "@/components/ScrollToTop";
+import Footer from "@/components/Footer";
 import HomePage from "@/pages/Home";
 import ProfilePage from "@/pages/Profile";
 import GamesPage from "@/pages/Games";
@@ -12,6 +14,7 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
+                <ScrollToTop />
                 <div className="flex flex-col min-h-screen">
                     <Navbar />
                     <main className="flex-1">
@@ -24,6 +27,7 @@ function App() {
                             <Route path="/link-psn" element={<LinkPSNPage />} />
                         </Routes>
                     </main>
+                    <Footer />
                 </div>
             </AuthProvider>
         </BrowserRouter>
