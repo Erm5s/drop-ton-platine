@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchGames, type GameList, type GameSort } from "@/lib/api";
 import GameCard from "@/components/GameCard";
+import SectionBanner from "@/components/SectionBanner";
 
 const SORT_OPTIONS: { value: GameSort; label: string }[] = [
     { value: "title", label: "Ordre alphabétique" },
@@ -55,12 +56,7 @@ export default function GamesPage() {
 
     return (
         <div className="w-full px-6 py-10 bg-white">
-            <h2
-                className="text-center text-white text-xl font-semibold py-3 mb-4"
-                style={{ background: "linear-gradient(360deg, var(--color-navy-dark), var(--color-navy))" }}
-            >
-                Catalogue des jeux
-            </h2>
+            <SectionBanner>Catalogue des jeux</SectionBanner>
 
             {/* Barre de recherche + critère de tri */}
             <div className="flex flex-wrap items-center gap-3 mb-4">

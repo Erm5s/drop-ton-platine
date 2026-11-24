@@ -174,3 +174,50 @@ export async function verifyPsnLink(psnUsername: string) {
 }
 
 
+export type RankTier = "bronze" | "argent" | "or" | "platine";
+
+/** Une ligne du classement général. */
+export type LeaderboardPlayer = {
+    /** Place au classement, continue d'une page à l'autre. */
+    position: number;
+    psnId: string;
+    username: string;
+    avatarUrl: string | null;
+    points: number;
+    rank: { tier: RankTier; label: string };
+    /** Niveau PSN du joueur. */
+    level: number;
+    /** Progression vers le niveau suivant, en pourcentage. */
+    progress: number;
+    bronze: number;
+    silver: number;
+    gold: number;
+    platinum: number;
+    /** Somme des quatre couleurs. */
+    trophies: number;
+};
+
+export type Leaderboard = {
+    players: LeaderboardPlayer[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+};
+
+export function fetchLeaderboard(page: number) {
+    return get<Leaderboard>(`/api/leaderboard?page=${page}`);
+}
+
+/** Chiffres du classement, affichés dans son en-tête. */
+export type SiteStats = {
+    players: number;
+    /** Trophées obtenus, tous joueurs confondus. */
+    trophies: number;
+    /** Nombre de joueurs par métal, du plus bas au plus haut. */
+    distribution: { tier: RankTier; count: number }[];
+};
+
+export function fetchStats() {
+    return get<SiteStats>("/api/stats");
+}

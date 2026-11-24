@@ -8,6 +8,8 @@ import profileRouter from "@/routes/profile";
 import gamesRouter from "@/routes/games";
 import trophiesRouter from "@/routes/trophies";
 import authRouter from "@/routes/auth";
+import leaderboardRouter from "@/routes/leaderboard";
+import statsRouter from "@/routes/stats";
 
 const app = express();
 const PORT = process.env.PORT;
@@ -29,6 +31,8 @@ app.use("/api/profile", profileRouter);
 app.use("/api/games", gamesRouter);
 app.use("/api/trophies", trophiesRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/leaderboard", leaderboardRouter);
+app.use("/api/stats", statsRouter);
 
 // Vérifie que le serveur est vivant
 app.get("/health", (_req, res) => {

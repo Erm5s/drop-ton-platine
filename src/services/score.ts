@@ -1,3 +1,4 @@
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/db";
 
 /**
@@ -120,3 +121,65 @@ export async function getUserTotalPoints(userId: string): Promise<number> {
         .reduce((total, score) => total + score.earnedPoints, 0);
 }
 
+/**
+ * Fragment SQL donnant le total de points de chaque joueur : (userId, points).
+ *
+ * Même règle que `getUserGameScores`, mais pour tous les joueurs d'un coup. Le classement
+ * et les compteurs du site s'en servent tous les deux : partager le fragment évite que les
+ * deux pages affichent des totaux différents le jour où le barème change.
+ *
+ * Le calcul repart des trophées à chaque appel. C'est tenable tant que la base compte
+ * quelques joueurs ; au-delà, ce total aura sa place dans une colonne tenue à jour par la
+ * synchronisation plutôt que recalculé à la volée.
+ */
+export const playerPointsSql = Prisma.sql`
+    WITH groupes AS (
+        -- Une ligne par joueur et par liste de trophées : combien elle en compte,
+        -- combien ce joueur en a obtenus
+        SELECT
+            jeu."userId",
+            trophee."gameId",
+            trophee."groupId",
+            count(*) AS total,
+            count(obtenu."trophyId") AS earned
+        FROM "UserGame" jeu
+        JOIN "Trophy" trophee ON trophee."gameId" = jeu."gameId"
+        LEFT JOIN "UserTrophy" obtenu
+            ON obtenu."userId" = jeu."userId"
+           AND obtenu."gameId" = trophee."gameId"
+           AND obtenu."trophyId" = trophee."trophyId"
+        GROUP BY jeu."userId", trophee."gameId", trophee."groupId"
+    ),
+    parJeu AS (
+        SELECT
+            groupes."userId",
+            jeu.id AS "gameId",
+            coalesce(jeu."canonicalId", jeu.id) AS "canonicalId",
+            (
+                CASE WHEN bool_or(groupes."groupId" = 'default' AND groupes.total = groupes.earned)
+                     THEN coalesce(jeu.points, 0) ELSE 0 END
+                + count(*) FILTER (WHERE groupes."groupId" <> 'default' AND groupes.total = groupes.earned)
+                  * coalesce(jeu.difficulty, 0)
+            )::int AS "earnedPoints"
+        FROM groupes
+        JOIN "Game" jeu ON jeu.id = groupes."gameId"
+        GROUP BY groupes."userId", jeu.id, jeu.points, jeu.difficulty, jeu."canonicalId"
+    ),
+    retenus AS (
+        -- Les variantes régionales d'un même jeu ne comptent qu'une fois par joueur
+        SELECT
+            "userId",
+            "earnedPoints",
+            row_number() OVER (
+                PARTITION BY "userId", "canonicalId"
+                ORDER BY "earnedPoints" DESC, "gameId" ASC
+            ) AS rang
+        FROM parJeu
+    ),
+    totaux AS (
+        SELECT "userId", sum("earnedPoints")::int AS points
+        FROM retenus
+        WHERE rang = 1
+        GROUP BY "userId"
+    )
+`;

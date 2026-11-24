@@ -12,6 +12,7 @@ import PartnersPage from "@/pages/Partners";
 import TermsPage from "@/pages/Terms";
 import CookiesPage from "@/pages/Cookies";
 import AboutPage from "@/pages/About";
+import LeaderboardPage from "@/pages/Leaderboard";
 import ConnectionPage from "@/pages/Connection";
 import LinkPSNPage from "@/pages/LinkPSN";
 
@@ -33,6 +34,7 @@ function App() {
                             <Route path="/cgu" element={<TermsPage />} />
                             <Route path="/cookies" element={<CookiesPage />} />
                             <Route path="/qui-sommes-nous" element={<AboutPage />} />
+                            <Route path="/classement" element={<LeaderboardPage />} />
                             <Route path="/connection" element={<ConnectionPage />} />
                             <Route path="/link-psn" element={<LinkPSNPage />} />
                         </Routes>
