@@ -126,13 +126,6 @@ export default function ProfilePage() {
                         </div>
                     </div>
                 </div>
-
-                {/* Colonne publicité (masquée sur petit écran), suit le défilement */}
-                <aside className="hidden lg:block w-[250px] shrink-0">
-                    <div className="sticky top-4 h-[600px] bg-card border border-border flex items-center justify-center">
-                        <span className="text-muted-foreground text-sm">PUB</span>
-                    </div>
-                </aside>
             </div>
         </div>
     );
