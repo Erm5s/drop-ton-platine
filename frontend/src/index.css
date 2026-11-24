@@ -127,3 +127,18 @@
         -webkit-font-smoothing: antialiased;
     }
 }
+
+/*
+ * Aimantation du défilement, activée seulement par la page partenaires.
+ *
+ * Le conteneur qui défile est le document : la classe doit donc être posée sur <html>, pas
+ * sur un bloc de la page. "proximity" plutôt que "mandatory" pour que l'en-tête et le bloc
+ * de fin restent atteignables sans être happés par un bandeau.
+ */
+html.snap-sections {
+    scroll-snap-type: y proximity;
+}
+
+.snap-section {
+    scroll-snap-align: center;
+}

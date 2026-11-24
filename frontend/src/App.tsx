@@ -7,6 +7,8 @@ import HomePage from "@/pages/Home";
 import ProfilePage from "@/pages/Profile";
 import GamesPage from "@/pages/Games";
 import GamePage from "@/pages/Game";
+import CreatorsPage from "@/pages/Creators";
+import PartnersPage from "@/pages/Partners";
 import ConnectionPage from "@/pages/Connection";
 import LinkPSNPage from "@/pages/LinkPSN";
 
@@ -23,6 +25,8 @@ function App() {
                             <Route path="/profile/:username" element={<ProfilePage />} />
                             <Route path="/games" element={<GamesPage />} />
                             <Route path="/games/:id" element={<GamePage />} />
+                            <Route path="/createurs" element={<CreatorsPage />} />
+                            <Route path="/partenaires" element={<PartnersPage />} />
                             <Route path="/connection" element={<ConnectionPage />} />
                             <Route path="/link-psn" element={<LinkPSNPage />} />
                         </Routes>
