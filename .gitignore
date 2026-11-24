@@ -30,3 +30,10 @@ Thumbs.db
 
 # Bun
 bun.lockb
+
+# Données locales des conteneurs
+redisdata/
+
+# Sorties de scripts et fichiers de travail
+notes/
+*.csv
