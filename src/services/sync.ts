@@ -148,11 +148,19 @@ async function syncUserGames(accountId: string) {
  * @returns true si la liste de trophées vient d'être (re)construite
  */
 async function syncGame(gameId: string, title: string, platforms: string[], iconUrl: string, trophySetVersion: string, npServiceName: "trophy" | "trophy2") {
-    // Récupération du jeu à synchroniser
-    const existing = await prisma.game.findUnique({ where: { id: gameId } });
+    // Récupération du jeu à synchroniser, avec le nombre de trophées déjà en base
+    const existing = await prisma.game.findUnique({
+        where: { id: gameId },
+        include: { _count: { select: { trophies: true } } },
+    });
 
-    // Nécessite une sychronisation avec la DB si le jeu n'est pas déjà dedans ou si la version n'est pas à jour
-    const needsTrophySync = !existing || existing.trophySetVersion !== trophySetVersion;
+    // Nécessite une synchronisation si le jeu n'est pas déjà en base, si la version n'est pas
+    // à jour, ou si aucun trophée n'est enregistré. Ce dernier cas vient d'un jeu inscrit au
+    // catalogue avec ses métadonnées et sa version, mais sans ses trophées : la version
+    // ferait alors croire à tort que la liste est déjà synchronisée.
+    const needsTrophySync = !existing
+        || existing.trophySetVersion !== trophySetVersion
+        || existing._count.trophies === 0;
 
     // Ajout du jeu dans la base s'il n'existe pas, sinon rafraîchissement de ses infos
     // (le titre et l'icône peuvent changer côté PSN sans que la liste de trophées bouge)
