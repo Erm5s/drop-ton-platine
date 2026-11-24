@@ -40,6 +40,8 @@ export type CatalogGame = Game & {
     silver: number | null;
     gold: number | null;
     platinum: number | null;
+    difficulty: number | null;
+    points: number | null;
 };
 
 export type GameSort = "title" | "id";
@@ -49,6 +51,7 @@ export type GameList = {
     total: number;
     page: number;
     sort: GameSort;
+    rated: boolean;
     limit: number;
     totalPages: number;
 };
@@ -58,6 +61,12 @@ export type UserGame = {
     lastUpdatedDateTime: string | null;
     earned: number;
     total: number;
+    /** Points acquis sur ce jeu selon le barème. */
+    earnedPoints: number;
+    /** Points maximum atteignables : liste de base + un lot par DLC. */
+    maxPoints: number;
+    /** Faux si ce jeu est une variante régionale déjà comptée ailleurs. */
+    counted: boolean;
     game: Game;
 };
 
@@ -75,6 +84,8 @@ export type Profile = {
     username: string;
     avatarUrl: string | null;
     stats: UserStats | null;
+    /** Somme des points acquis sur tous les jeux. */
+    totalPoints: number;
     games: UserGame[];
 };
 
@@ -82,11 +93,12 @@ export function fetchProfile(username: string) {
     return get<Profile>(`/api/profile/${username}`);
 }
 
-export function fetchGames({ search, page, sort }: { search?: string; page?: number; sort?: GameSort }) {
+export function fetchGames({ search, page, sort, rated }: { search?: string; page?: number; sort?: GameSort; rated?: boolean }) {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (page) params.set("page", String(page));
     if (sort) params.set("sort", sort);
+    if (rated) params.set("rated", "true");
 
     return get<GameList>(`/api/games?${params}`);
 }
@@ -114,4 +126,5 @@ export async function startPsnLink() {
 export async function verifyPsnLink(psnUsername: string) {
     return post("/api/auth/psn/link-verify", { psnUsername });
 }
+
 

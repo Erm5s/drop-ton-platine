@@ -11,6 +11,7 @@ export default function GamesPage() {
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
     const [sort, setSort] = useState<GameSort>("title");
+    const [ratedOnly, setRatedOnly] = useState(false);
 
     const [data, setData] = useState<GameList | null>(null);
     const [loading, setLoading] = useState(true);
@@ -24,17 +25,17 @@ export default function GamesPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
-    // Toute nouvelle recherche ou changement de tri renvoie en page 1
+    // Toute nouvelle recherche, tri ou filtre renvoie en page 1
     useEffect(() => {
         setPage(1);
-    }, [debouncedSearch, sort]);
+    }, [debouncedSearch, sort, ratedOnly]);
 
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
         setError(null);
 
-        fetchGames({ search: debouncedSearch, page, sort })
+        fetchGames({ search: debouncedSearch, page, sort, rated: ratedOnly })
             .then((result) => {
                 // Une réponse arrivée après un changement de recherche est périmée : on l'ignore
                 if (!cancelled) setData(result);
@@ -49,7 +50,7 @@ export default function GamesPage() {
         return () => {
             cancelled = true;
         };
-    }, [debouncedSearch, page, sort]);
+    }, [debouncedSearch, page, sort, ratedOnly]);
 
     return (
         <div className="w-full px-6 py-10 bg-white">
@@ -81,6 +82,15 @@ export default function GamesPage() {
                         </option>
                     ))}
                 </select>
+                <label className="flex items-center gap-2 text-sm text-gray-600 select-none cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={ratedOnly}
+                        onChange={(e) => setRatedOnly(e.target.checked)}
+                        className="accent-accent"
+                    />
+                    Jeux notés uniquement
+                </label>
             </div>
 
             {data && !error && (
@@ -102,6 +112,8 @@ export default function GamesPage() {
                         iconUrl={game.iconUrl}
                         platforms={game.platforms}
                         trophies={game}
+                        difficulty={game.difficulty}
+                        points={game.points}
                     />
                 ))}
             </div>

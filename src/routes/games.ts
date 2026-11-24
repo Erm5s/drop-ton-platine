@@ -12,6 +12,8 @@ const listQuerySchema = z.object({
     search: z.string().trim().max(100).optional(),
     page: z.coerce.number().int().min(1).default(1),
     sort: z.enum(["title", "id"]).default("title"),
+    // Case à cocher côté client : seule la valeur "true" active le filtre
+    rated: z.enum(["true", "false"]).optional(),
 });
 
 // GET /api/games?search=lemmings&page=1&sort=title
@@ -23,9 +25,13 @@ router.get("/", async (req, res, next) => {
         }
 
         const { search, page, sort } = parsed.data;
+        const ratedOnly = parsed.data.rated === "true";
 
         // Une recherche vide ne doit pas filtrer : on liste tout le catalogue
-        const where = search ? { title: { contains: search, mode: "insensitive" as const } } : {};
+        const where = {
+            ...(search ? { title: { contains: search, mode: "insensitive" as const } } : {}),
+            ...(ratedOnly ? { points: { not: null } } : {}),
+        };
 
         // Tri par titre : on trie sur sortKey, pas sur title. Cette colonne encode l'ordre
         // voulu (ponctuation, chiffres, alphabet latin, puis écritures étrangères), que la
@@ -52,6 +58,8 @@ router.get("/", async (req, res, next) => {
                     silver: true,
                     gold: true,
                     platinum: true,
+                    difficulty: true,
+                    points: true,
                 },
             }),
             prisma.game.count({ where }),
@@ -62,29 +70,10 @@ router.get("/", async (req, res, next) => {
             total,
             page,
             sort,
+            rated: ratedOnly,
             limit: PAGE_SIZE,
             totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
         });
-    } catch (err) {
-        next(err);
-    }
-});
-
-// GET /api/games/:id
-router.get("/:id", async (req, res, next) => {
-    try {
-        const game = await prisma.game.findUnique({
-            where: { id: req.params.id },
-            include: {
-                trophyGroups: { orderBy: { groupId: "asc" } },
-            },
-        });
-
-        if (!game) {
-            return next(new AppError(404, "Jeu introuvable."));
-        }
-
-        res.json(game);
     } catch (err) {
         next(err);
     }

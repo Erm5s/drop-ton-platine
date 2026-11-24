@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "@/db";
 import { syncUser } from "@/services/sync";
+import { getUserGameScores } from "@/services/score";
 import { AppError } from "@/utils/errors";
 
 const router = Router();
@@ -31,7 +32,10 @@ router.get("/:username", async (req, res, next) => {
 
         let user = await findUserByUsername(username);
 
-        if (!user) {
+        // Un joueur connu mais sans aucun jeu vient d'une synchronisation interrompue : la
+        // ligne User est écrite avant les jeux, donc un échec en cours de route laisse un
+        // profil vide que rien ne viendrait jamais compléter.
+        if (!user || user.games.length === 0) {
             await syncUser(username);
             user = await findUserByUsername(username);
         }
@@ -48,16 +52,28 @@ router.get("/:username", async (req, res, next) => {
         });
         const earnedByGame = new Map(earnedRows.map((row) => [row.gameId, row._count._all]));
 
+        // Barème : points acquis et maximum atteignable, jeu par jeu
+        const scores = await getUserGameScores(user.psnId);
+        const scoreByGame = new Map(scores.map((score) => [score.gameId, score]));
+        // Les variantes régionales déjà comptées sont exclues du total
+        const totalPoints = scores
+            .filter((score) => score.counted)
+            .reduce((sum, score) => sum + score.earnedPoints, 0);
+
         res.json({
             psnId: user.psnId,
             username: user.username,
             avatarUrl: user.avatarUrl,
             stats: user.stats,
+            totalPoints,
             games: user.games.map((ug) => ({
                 gameId: ug.gameId,
                 lastUpdatedDateTime: ug.lastUpdatedDateTime,
                 earned: earnedByGame.get(ug.gameId) ?? 0,
                 total: ug.game._count.trophies,
+                earnedPoints: scoreByGame.get(ug.gameId)?.earnedPoints ?? 0,
+                maxPoints: scoreByGame.get(ug.gameId)?.maxPoints ?? 0,
+                counted: scoreByGame.get(ug.gameId)?.counted ?? true,
                 game: {
                     id: ug.game.id,
                     title: ug.game.title,

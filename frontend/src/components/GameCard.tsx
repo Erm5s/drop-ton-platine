@@ -16,9 +16,17 @@ type GameCardProps = {
     total?: number;
     /** Trophées définis par le jeu. Affichés à la place de la progression dans le catalogue. */
     trophies?: TrophyCounts;
+    /** Barème interne. Absent tant que le jeu n'a pas été noté. */
+    difficulty?: number | null;
+    points?: number | null;
+    /** Progression au barème d'un joueur : acquis sur maximum atteignable. */
+    earnedPoints?: number;
+    maxPoints?: number;
+    /** Faux pour une variante régionale déjà comptée : les points ne s'ajoutent pas. */
+    counted?: boolean;
 };
 
-export default function GameCard({ title, iconUrl, platforms, earned, total, trophies }: GameCardProps) {
+export default function GameCard({ title, iconUrl, platforms, earned, total, trophies, difficulty, points, earnedPoints, maxPoints, counted = true }: GameCardProps) {
     const hasProgress = earned !== undefined && total !== undefined;
     const percent = hasProgress && total > 0 ? Math.round((earned / total) * 100) : 0;
 
@@ -59,9 +67,16 @@ export default function GameCard({ title, iconUrl, platforms, earned, total, tro
                 )}
             </div>
 
+            {/* Barème à droite : progression du joueur si connue, sinon valeur du jeu */}
+            {maxPoints != null && maxPoints > 0 ? (
+                <ScoreBadge earned={earnedPoints ?? 0} max={maxPoints} counted={counted} />
+            ) : (
+                points != null && <PointsBadge points={points} difficulty={difficulty} />
+            )}
+
             {/* Plateformes : un jeu cross-gen en a plusieurs (ex: PS4 + PS5) */}
             {platforms.length > 0 && (
-                <div className="flex flex-col items-end -space-y-1.5 shrink-0 self-start">
+                <div className="flex flex-col items-end -space-y-1.5 shrink-0 self-center">
                     {platforms.map((p) => (
                         <PlatformBadge key={p} platform={p} />
                     ))}
@@ -96,6 +111,42 @@ function PlatformBadge({ platform }: { platform: string }) {
             className="h-6 w-auto object-contain"
             onError={() => setFailed(true)}
         />
+    );
+}
+
+/** Progression au barème d'un joueur sur un jeu : "30/35 pts". */
+function ScoreBadge({ earned, max, counted }: { earned: number; max: number; counted: boolean }) {
+    const complete = earned === max;
+
+    // Une variante reste affichée — le joueur l'a bien terminée — mais sans couleur, pour
+    // montrer qu'elle ne rapporte rien de plus.
+    const style = !counted ? "bg-gray-100 text-gray-400"
+        : complete ? "bg-accent text-white"
+        : "bg-blue-100 text-navy-dark";
+
+    return (
+        <div className="flex flex-col items-end gap-1 shrink-0 self-center">
+            <span className={`text-xs font-bold px-2 py-1 rounded ${style}`}>
+                {earned}/{max} pts
+            </span>
+            {!counted && <span className="text-gray-400 text-xs whitespace-nowrap">déjà compté</span>}
+        </div>
+    );
+}
+
+/** Barème interne : points rapportés, et difficulté quand elle est renseignée. */
+function PointsBadge({ points, difficulty }: { points: number; difficulty?: number | null }) {
+    return (
+        <div className="flex flex-col items-end gap-1 shrink-0 self-center">
+            <span className="bg-accent text-white text-xs font-bold px-2 py-1 rounded">
+                {points} pts
+            </span>
+            {difficulty != null && (
+                <span className="text-gray-500 text-xs font-bold whitespace-nowrap" title="Difficulté">
+                    Diff. {difficulty}/10
+                </span>
+            )}
+        </div>
     );
 }
 

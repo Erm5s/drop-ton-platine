@@ -85,7 +85,7 @@ export default function ProfilePage() {
                                 Niveau {stats.level}
                             </span>
                             <span className="text-navy-dark font-medium italic">
-                                30000 Points
+                                {profile.totalPoints.toLocaleString("fr-FR")} Points
                             </span>
                             <span className="text-navy-dark font-semibold">
                                 Classement : 300
@@ -109,7 +109,7 @@ export default function ProfilePage() {
                             Liste de trophées
                         </h2>
                         <div className="flex flex-col bg-white">
-                            {games.map(({ game, earned, total }) => (
+                            {games.map(({ game, earned, total, earnedPoints, maxPoints, counted }) => (
                                 <GameCard
                                     key={game.id}
                                     title={game.title}
@@ -117,6 +117,9 @@ export default function ProfilePage() {
                                     platforms={game.platforms}
                                     earned={earned}
                                     total={total}
+                                    earnedPoints={earnedPoints}
+                                    maxPoints={maxPoints}
+                                    counted={counted}
                                 />
                             ))}
                         </div>
