@@ -68,10 +68,19 @@ model Game {
   difficulty       Int?
   points           Int?
 
+  // Variantes régionales : un même jeu republié sous plusieurs npCommunicationId. La ligne
+  // de référence a canonicalId à null, les autres pointent vers elle. Sert à ne compter les
+  // points qu'une fois, même si le joueur a terminé plusieurs versions.
+  canonicalId      String?
+  canonical        Game?         @relation("GameVariants", fields: [canonicalId], references: [id])
+  variants         Game[]        @relation("GameVariants")
+
   trophies         Trophy[]
   trophyGroups     TrophyGroup[]
   users            UserGame[]
 
+  // Retrouver toutes les variantes d'un jeu
+  @@index([canonicalId])
   // Tri alphabétique du catalogue quand aucune recherche n'est active
   @@index([title])
   // Sert l'ordre d'affichage du catalogue, id compris pour départager les titres identiques
