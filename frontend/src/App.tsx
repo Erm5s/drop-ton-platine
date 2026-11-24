@@ -9,6 +9,8 @@ import GamesPage from "@/pages/Games";
 import GamePage from "@/pages/Game";
 import CreatorsPage from "@/pages/Creators";
 import PartnersPage from "@/pages/Partners";
+import TermsPage from "@/pages/Terms";
+import CookiesPage from "@/pages/Cookies";
 import ConnectionPage from "@/pages/Connection";
 import LinkPSNPage from "@/pages/LinkPSN";
 
@@ -27,6 +29,8 @@ function App() {
                             <Route path="/games/:id" element={<GamePage />} />
                             <Route path="/createurs" element={<CreatorsPage />} />
                             <Route path="/partenaires" element={<PartnersPage />} />
+                            <Route path="/cgu" element={<TermsPage />} />
+                            <Route path="/cookies" element={<CookiesPage />} />
                             <Route path="/connection" element={<ConnectionPage />} />
                             <Route path="/link-psn" element={<LinkPSNPage />} />
                         </Routes>
