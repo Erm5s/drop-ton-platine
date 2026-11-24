@@ -64,6 +64,10 @@ model Game {
   // Clé de tri
   sortKey          String        @default("")
 
+  // Barème interne, importé depuis le fichier de points
+  difficulty       Int?
+  points           Int?
+
   trophies         Trophy[]
   trophyGroups     TrophyGroup[]
   users            UserGame[]
